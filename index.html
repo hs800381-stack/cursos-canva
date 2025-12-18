@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plataforma de Curso Online</title>
+<style>
+:root{--azul:#2563eb;--roxo:#7c3aed;--escuro:#020617}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#020617;color:#fff}
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex}
+.center{align-items:center;justify-content:center}
+.card{background:rgba(2,6,23,.95);padding:30px;border-radius:18px;max-width:520px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+h1,h2,h3{text-align:center;color:#a78bfa}
+input{width:100%;padding:12px;margin:6px 0;border-radius:10px;border:none}
+button{width:100%;padding:14px;margin-top:10px;border:none;border-radius:12px;background:linear-gradient(90deg,var(--azul),var(--roxo));color:#fff;font-size:15px;cursor:pointer}
+.link{text-align:center;margin-top:12px;color:#93c5fd;cursor:pointer}
+.success{background:#16a34a;padding:12px;border-radius:10px;text-align:center;margin-bottom:10px}
+.container{display:flex;min-height:100vh}
+nav{width:260px;background:#020617;padding:20px}
+nav button{background:#312e81;margin-bottom:8px}
+nav button.completed{background:#16a34a}
+main{flex:1;padding:20px;background:#020617}
+iframe{width:100%;height:360px;border:none;border-radius:12px}
+.quiz label{display:block;margin:6px 0}
+.correct{color:#22c55e}
+.wrong{color:#ef4444}
+.admin-table{width:100%;border-collapse:collapse;margin-top:20px}
+.admin-table th,.admin-table td{border:1px solid #334155;padding:8px;text-align:center}
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<section id="home" class="screen active center">
+  <div class="card">
+    <h1>Curso Online</h1>
+    <button onclick="show('register')">Cadastro</button>
+    <button onclick="show('login')">Login do Aluno</button>
+    <button onclick="show('adminLogin')">Administrador</button>
+  </div>
+</section>
+
+<!-- CADASTRO -->
+<section id="register" class="screen center">
+  <div class="card">
+    <h2>Cadastro</h2>
+    <div id="msgCadastro"></div>
+    <input id="cadNome" placeholder="Nome completo">
+    <input id="cadCpf" placeholder="CPF">
+    <input id="cadSenha" placeholder="Senha">
+    <button onclick="salvarCadastro()">Cadastrar</button>
+    <div class="link" onclick="show('home')">Voltar</div>
+  </div>
+</section>
+
+<!-- LOGIN ALUNO -->
+<section id="login" class="screen center">
+  <div class="card">
+    <h2>Login do Aluno</h2>
+    <input id="loginCpf" placeholder="CPF">
+    <input id="loginSenha" placeholder="Senha">
+    <button onclick="loginAluno()">Entrar</button>
+    <div class="link" onclick="show('home')">Voltar</div>
+  </div>
+</section>
+
+<!-- LOGIN ADMIN -->
+<section id="adminLogin" class="screen center">
+  <div class="card">
+    <h2>Login Administrador</h2>
+    <input id="adminUser" placeholder="Usuário">
+    <input id="adminPass" placeholder="Senha">
+    <button onclick="loginAdmin()">Entrar</button>
+    <div class="link" onclick="show('home')">Voltar</div>
+  </div>
+</section>
+
+<!-- ADMIN -->
+<section id="adminPanel" class="screen center">
+  <div class="card" style="max-width:900px">
+    <h2>Painel do Administrador</h2>
+    <table class="admin-table">
+      <thead>
+        <tr><th>Aluno</th><th>CPF</th><th>Status</th><th>Ações</th></tr>
+      </thead>
+      <tbody id="listaAlunos"></tbody>
+    </table>
+    <button onclick="show('home')">Sair</button>
+  </div>
+</section>
+
+<!-- PLATAFORMA -->
+<section id="platform" class="screen">
+  <div class="container">
+    <nav id="menuModulos"></nav>
+    <main>
+      <div id="progresso"></div>
+      <iframe id="video"></iframe>
+      <div id="conteudo"></div>
+      <div id="quiz"></div>
+    </main>
+  </div>
+</section>
+
+<script>
+let alunos = JSON.parse(localStorage.getItem('alunos')) || [];
+let alunoAtual = null;
+
+const modulos = [
+ {nome:'📘 Módulo 1 – Introdução', video:'o+que+é+canva', texto:'Introdução ao Canva.'},
+ {nome:'👤 Módulo 2 – Conta', video:'criar+conta+canva', texto:'Criação de conta.'},
+ {nome:'🎨 Módulo 3 – Design', video:'design+canva', texto:'Princípios de design.'},
+ {nome:'✍️ Módulo 4 – Tipografia', video:'tipografia+canva', texto:'Uso de fontes.'},
+ {nome:'🧩 Módulo 5 – Elementos', video:'elementos+canva', texto:'Elementos gráficos.'},
+ {nome:'🖼️ Módulo 6 – Imagens', video:'imagens+canva', texto:'Edição de imagens.'},
+ {nome:'🚀 Módulo 7 – Avançado', video:'canva+pro', texto:'Recursos avançados.'}
+];
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function salvarCadastro(){
+  alunos.push({nome:cadNome.value,cpf:cadCpf.value,senha:cadSenha.value,aprovado:false,concluidos:[]});
+  localStorage.setItem('alunos',JSON.stringify(alunos));
+  msgCadastro.innerHTML='<div class="success">Cadastro realizado com sucesso. Aguarde aprovação.</div>';
+  setTimeout(()=>show('home'),2000);
+}
+
+function loginAluno(){
+  alunoAtual = alunos.find(a=>a.cpf===loginCpf.value && a.senha===loginSenha.value);
+  if(!alunoAtual) return alert('Login inválido');
+  if(!alunoAtual.aprovado) return alert('Aguardando aprovação');
+  carregarModulos();
+  show('platform');
+}
+
+function loginAdmin(){
+  if(adminUser.value==='admin' && adminPass.value==='mki8nju7'){
+    atualizarAdmin();
+    show('adminPanel');
+  } else alert('Credenciais inválidas');
+}
+
+function atualizarAdmin(){
+  listaAlunos.innerHTML='';
+  alunos.forEach((a,i)=>{
+    listaAlunos.innerHTML+=`<tr><td>${a.nome}</td><td>${a.cpf}</td><td>${a.aprovado?'Liberado':'Bloqueado'}</td><td><button onclick="aprovar(${i})">Aprovar</button></td></tr>`;
+  });
+}
+
+function aprovar(i){
+  alunos[i].aprovado=true;
+  localStorage.setItem('alunos',JSON.stringify(alunos));
+  atualizarAdmin();
+}
+
+function carregarModulos(){
+  menuModulos.innerHTML='';
+  modulos.forEach((m,i)=>{
+    const b=document.createElement('button');
+    b.textContent=m.nome;
+    if(i>0 && !alunoAtual.concluidos.includes(i-1)) b.disabled=true;
+    b.onclick=()=>abrirModulo(i);
+    menuModulos.appendChild(b);
+  });
+  progresso.innerText='Progresso: '+Math.round((alunoAtual.concluidos.length/modulos.length)*100)+'%';
+}
+
+function abrirModulo(i){
+  video.src='https://www.youtube.com/embed?listType=search&list='+modulos[i].video;
+  conteudo.innerHTML=`<h3>${modulos[i].nome}</h3><p>${modulos[i].texto}</p><button onclick="finalizarModulo(${i})">Concluir</button>`;
+  quiz.innerHTML='';
+}
+
+function finalizarModulo(i){
+  if(!alunoAtual.concluidos.includes(i)) alunoAtual.concluidos.push(i);
+  localStorage.setItem('alunos',JSON.stringify(alunos));
+  carregarModulos();
+}
+</script>
+</body>
+</html>
